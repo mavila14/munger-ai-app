@@ -1,7 +1,7 @@
 import streamlit as st
 import re
 import json
-import google.generativeai as genai
+from google import genai  # pip install google-ai-genai
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
