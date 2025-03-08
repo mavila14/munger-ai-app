@@ -1,7 +1,7 @@
 import streamlit as st
 import re
 import json
-from google import genai  # pip install google-ai-genai
+import google.generativeai as genai  # <-- Use google-generativeai (PyPI) instead of google-ai-genai
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -451,20 +451,16 @@ def render_factor_card(factor, value, description):
 
 def create_radar_chart(factors):
     categories = ['Discretionary Income', 'Opportunity Cost', 'Goal Alignment', 
-                 'Long-Term Impact', 'Behavioral']
+                  'Long-Term Impact', 'Behavioral']
     
     values = [factors['D'], factors['O'], factors['G'], factors['L'], factors['B']]
-    # Add the first value at the end to close the shape
+    # Close the shape by adding the first value again
     values.append(values[0])
     categories.append(categories[0])
     
-    # Create angle values for radar chart
-    angles = [n / float(len(categories)-1) * 2 * 3.14159 for n in range(len(categories))]
-    
-    # Create a polar plot
     fig = go.Figure()
     
-    # Add radar chart trace
+    # Radar trace
     fig.add_trace(go.Scatterpolar(
         r=values,
         theta=categories,
@@ -474,33 +470,26 @@ def create_radar_chart(factors):
         name='Factors'
     ))
     
-    # Add horizontal lines for reference
+    # Reference lines
     for i in [-2, -1, 0, 1, 2]:
         fig.add_trace(go.Scatterpolar(
-            r=[i] * (len(categories)),
+            r=[i]*(len(categories)),
             theta=categories,
             line=dict(color='rgba(200, 200, 200, 0.5)', width=1, dash='dash'),
             name=f'Level {i}',
             showlegend=False
         ))
     
-    # Update layout
+    # Layout
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
                 visible=True,
                 range=[-3, 3],
                 tickvals=[-2, -1, 0, 1, 2],
-                showticklabels=True,
-                ticks='',
-                linewidth=0,
-                gridwidth=0.5,
                 gridcolor='rgba(200, 200, 200, 0.3)'
             ),
             angularaxis=dict(
-                tickwidth=1,
-                linewidth=1,
-                gridwidth=1,
                 gridcolor='rgba(200, 200, 200, 0.3)'
             ),
             bgcolor='rgba(255, 255, 255, 0.9)'
@@ -515,20 +504,19 @@ def create_radar_chart(factors):
     return fig
 
 def create_pds_gauge(pds):
-    # Define gauge colors based on value
+    # Color logic for gauge
     if pds >= 5:
-        color = "#48bb78"  # Green for positive
+        color = "#48bb78"  # Green
     elif pds < 0:
-        color = "#f56565"  # Red for negative
+        color = "#f56565"  # Red
     else:
-        color = "#ed8936"  # Orange for neutral
+        color = "#ed8936"  # Orange
     
-    # Create gauge chart
     fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = pds,
-        domain = {'x': [0, 1], 'y': [0, 1]},
-        gauge = {
+        mode="gauge+number",
+        value=pds,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        gauge={
             'axis': {'range': [-10, 10], 'tickwidth': 1, 'tickcolor': "#2d3748"},
             'bar': {'color': color},
             'bgcolor': "white",
@@ -557,10 +545,10 @@ def create_pds_gauge(pds):
     return fig
 
 # --------------------------------------------------
-# Gemini API Setup
+# Google Generative AI Setup
 # --------------------------------------------------
-GOOGLE_API_KEY = "AIzaSyB-RIjhhODp6aPTzqVcwbXD894oebXFCUY"
-GEMINI_MODEL = "gemini-2.0-flash"
+genai.configure(api_key="AIzaSyB-RIjhhODp6aPTzqVcwbXD894oebXFCUY")  # <-- Configure your API key here
+GEMINI_MODEL = "gemini-2.0-flash"  # Model name used in your prompts
 
 def get_factors_from_gemini(
     leftover_income: float,
@@ -571,10 +559,9 @@ def get_factors_from_gemini(
     item_cost: float
 ) -> dict:
     """
-    Calls the Gemini API using an explicit prompt that explains how to assign each factor.
+    Calls the generative AI API using an explicit prompt that explains how to assign each factor.
     Returns factor values (D, O, G, L, B) as integers (range -2 to +2).
     """
-    client = genai.Client(api_key=GOOGLE_API_KEY)
     prompt_text = f"""
 We have a Purchase Decision Score (PDS) formula:
 PDS = D + O + G + L + B,
@@ -605,13 +592,21 @@ Return the result in valid JSON format (only the JSON as the final line), for ex
   "B": 2
 }}
     """
+
     try:
-        response = client.models.generate_content(
+        response = genai.generate_text(
             model=GEMINI_MODEL,
-            contents=prompt_text.strip()
+            prompt=prompt_text.strip(),
+            temperature=0.7,
+            max_output_tokens=512
         )
-        output_text = response.text
-        # Use regex to extract candidate JSON blocks
+        # The text is typically in response.generations[0].text
+        if not response.generations:
+            st.error("No output from generative AI model.")
+            return {"D": 0, "O": 0, "G": 0, "L": 0, "B": 0}
+        output_text = response.generations[0].text
+        
+        # Attempt to parse JSON from the output
         candidates = re.findall(r"(\{[\s\S]*?\})", output_text, re.DOTALL)
         factors = None
         for candidate in candidates:
@@ -623,19 +618,17 @@ Return the result in valid JSON format (only the JSON as the final line), for ex
             except json.JSONDecodeError:
                 continue
         if factors is None:
-            st.error("Unable to parse JSON from Gemini model output.")
+            st.error("Unable to parse JSON from AI output.")
             return {"D": 0, "O": 0, "G": 0, "L": 0, "B": 0}
         return factors
     except Exception as e:
-        st.error(f"Error calling Gemini API: {e}")
+        st.error(f"Error calling Google Generative AI: {e}")
         return {"D": 0, "O": 0, "G": 0, "L": 0, "B": 0}
 
 def compute_pds(factors: dict) -> int:
-    """Compute the Purchase Decision Score as a sum of factors."""
     return sum(factors.get(k, 0) for k in ["D", "O", "G", "L", "B"])
 
 def get_recommendation(pds: int) -> tuple:
-    """Return a recommendation based on the PDS."""
     if pds >= 5:
         return "Likely a strong purchase choice.", "positive"
     elif pds < 0:
@@ -680,7 +673,6 @@ with st.sidebar:
     render_logo()
     st.markdown("##### Decision Assistant")
     
-    # Custom radio buttons
     pages = ["Decision Tool", "Features", "Sign Up", "Contact"]
     selection = st.radio("", pages, label_visibility="collapsed")
     
@@ -700,7 +692,6 @@ with st.sidebar:
 # Main Page Logic
 # --------------------------------------------------
 if selection == "Decision Tool":
-    # Landing Page
     st.markdown("""
     <div style="text-align: center; margin-bottom: 2rem;">
         <h1 class="landing-title">Munger AI</h1>
@@ -708,15 +699,12 @@ if selection == "Decision Tool":
     </div>
     """, unsafe_allow_html=True)
     
-    # Preset scenario selection
-    preset_choice = st.selectbox("Choose a Preset Scenario (or select 'Custom' to enter your own):", 
-                                 list(preset_scenarios.keys()) + ["Custom"])
-    if preset_choice != "Custom":
-        scenario = preset_scenarios[preset_choice]
-    else:
-        scenario = {}
-    
-    # Main form in a card
+    preset_choice = st.selectbox(
+        "Choose a Preset Scenario (or select 'Custom' to enter your own):", 
+        list(preset_scenarios.keys()) + ["Custom"]
+    )
+    scenario = preset_scenarios[preset_choice] if preset_choice != "Custom" else {}
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
     render_section_header("Purchase Details", "📊")
     
@@ -729,9 +717,9 @@ if selection == "Decision Tool":
         with col2:
             leftover_income = st.number_input("Monthly Leftover Income ($)", min_value=0.0, value=scenario.get("leftover_income", 1000.0), step=50.0)
             has_debt = st.selectbox("High-Interest Debt?", ["Yes", "No", "Unsure"], 
-                                   index=["Yes", "No", "Unsure"].index(scenario.get("has_high_interest_debt", "Yes")))
-            purchase_urgency = st.selectbox("Purchase Urgency", ["Urgent Needs", "Mostly Wants", "Mixed"], 
-                                           index=["Urgent Needs", "Mostly Wants", "Mixed"].index(scenario.get("purchase_urgency", "Urgent Needs")))
+                                   index=["Yes","No","Unsure"].index(scenario.get("has_high_interest_debt","Yes")))
+            purchase_urgency = st.selectbox("Purchase Urgency", ["Urgent Needs","Mostly Wants","Mixed"], 
+                                           index=["Urgent Needs","Mostly Wants","Mixed"].index(scenario.get("purchase_urgency","Urgent Needs")))
         
         submit_pdt = st.form_submit_button(
             "Generate AI Decision",
@@ -753,7 +741,7 @@ if selection == "Decision Tool":
             pds = compute_pds(factors)
             recommendation, rec_class = get_recommendation(pds)
             
-            # Display results
+            # Results
             st.markdown(f"""
             <div class="decision-box">
                 <h2>Purchase Decision Analysis</h2>
@@ -762,12 +750,9 @@ if selection == "Decision Tool":
             </div>
             """, unsafe_allow_html=True)
             
-            # Two columns for radar chart and gauge
             col1, col2 = st.columns(2)
-            
             with col1:
                 st.markdown("### Decision Factors")
-                # Display individual factors with cards
                 factor_descriptions = {
                     'D': 'Discretionary Income',
                     'O': 'Opportunity Cost', 
@@ -775,83 +760,75 @@ if selection == "Decision Tool":
                     'L': 'Long-Term Impact',
                     'B': 'Behavioral/Psychological'
                 }
-                
-                for factor, description in factor_descriptions.items():
-                    render_factor_card(factor, factors[factor], description)
-            
+                for factor, desc in factor_descriptions.items():
+                    render_factor_card(factor, factors[factor], desc)
+
             with col2:
                 st.markdown("### Factor Analysis")
-                # Radar chart of all factors
                 radar_fig = create_radar_chart(factors)
                 st.plotly_chart(radar_fig, use_container_width=True)
-                
-                # PDS Gauge
                 gauge_fig = create_pds_gauge(pds)
                 st.plotly_chart(gauge_fig, use_container_width=True)
             
-            # Detailed recommendation based on the factors
             st.markdown("### Decision Insights")
             st.markdown('<div class="card">', unsafe_allow_html=True)
             
             insights = []
-            
-            # Discretionary Income Factor
+            # D
             if factors["D"] <= 0:
                 insights.append("⚠️ This purchase may strain your discretionary income.")
             elif factors["D"] >= 2:
                 insights.append("✅ This purchase is well within your financial means.")
             
-            # Opportunity Cost Factor
+            # O
             if factors["O"] < 0:
                 insights.append("⚠️ Consider addressing high-interest debt first.")
             elif factors["O"] > 1:
                 insights.append("✅ This purchase represents a good use of your funds.")
             
-            # Goal Alignment Factor
+            # G
             if factors["G"] < 0:
                 insights.append("⚠️ This purchase doesn't align with your stated financial goal.")
             elif factors["G"] > 1:
                 insights.append("✅ This purchase strongly supports your main financial goal.")
             
-            # Long-Term Impact Factor
+            # L
             if factors["L"] < 0:
                 insights.append("⚠️ Be cautious of any potential ongoing costs this purchase may create.")
             elif factors["L"] > 1:
                 insights.append("✅ This purchase offers good long-term value.")
             
-            # Behavioral/Psychological Factor
+            # B
             if factors["B"] < 0:
                 insights.append("⚠️ Be aware of impulsive or stress-induced spending.")
             elif factors["B"] > 1:
                 insights.append("✅ This purchase urgency is justified and reduces stress.")
             
             if not insights:
-                st.markdown("No specific red or green flags found. Evaluate carefully!")
+                st.markdown("No significant red or green flags found. Evaluate carefully!")
             else:
-                for insight in insights:
-                    st.markdown(f"- {insight}")
+                for i in insights:
+                    st.markdown(f"- {i}")
             
             st.markdown('</div>', unsafe_allow_html=True)
 
 elif selection == "Features":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     render_section_header("Product Features", "💡")
-    st.write(
-        """
-        **Munger AI** helps you:
-        - Quickly evaluate discretionary vs. essential spending
-        - Assess alignment with your financial goals
-        - Measure long-term ROI or cost burden
-        - Account for behavioral and psychological triggers
-        - Produce a clear Purchase Decision Score (PDS)
-        
-        **Additional Highlights**:
-        - Secure, real-time AI analysis
-        - Easy-to-read charts and gauges
-        - Mobile-friendly design
-        - Regular updates and new scenarios
-        """
-    )
+    st.write("""
+    **Munger AI** helps you:
+    - Quickly evaluate discretionary vs. essential spending
+    - Assess alignment with your financial goals
+    - Measure long-term ROI or cost burden
+    - Account for behavioral and psychological triggers
+    - Produce a clear Purchase Decision Score (PDS)
+
+    **Additional Highlights**:
+    - Secure, real-time AI analysis
+    - Easy-to-read charts and gauges
+    - Mobile-friendly design
+    - Regular updates and new scenarios
+    """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif selection == "Sign Up":
@@ -877,16 +854,14 @@ elif selection == "Sign Up":
 elif selection == "Contact":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     render_section_header("Contact Us", "✉️")
-    st.write(
-        """
-        **We'd love to hear from you!**  
-        - **Email**: support@mungerai.com  
-        - **Phone**: (123) 456-7890  
-        - **Address**: 123 Munger Lane, FinTech City, USA  
+    st.write("""
+    **We'd love to hear from you!**  
+    - **Email**: support@mungerai.com  
+    - **Phone**: (123) 456-7890  
+    - **Address**: 123 Munger Lane, FinTech City, USA  
 
-        Or leave us a message below:
-        """
-    )
+    Or leave us a message below:
+    """)
     with st.form("contact_form"):
         user_name = st.text_input("Your Name")
         user_email = st.text_input("Your Email")
