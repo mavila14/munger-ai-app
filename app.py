@@ -2,26 +2,24 @@ import streamlit as st
 import re
 import json
 import google.generativeai as genai
-import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 
-# --------------------------------------------------------------------
-# Configure your Google Generative AI API key once at the start:
-# --------------------------------------------------------------------
+# ------------------------------------------------------------
+# Configure your Google Generative AI API key once at the start
+# ------------------------------------------------------------
 GOOGLE_API_KEY = st.secrets["google"]["api_key"]
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # We'll reference this model for all calls:
 GEMINI_MODEL = "gemini-2.0-flash"
 
-# --------------------------------------------------------------------
-# Custom CSS remains unchanged
-# --------------------------------------------------------------------
+# ------------------------------------------------------------
+# Custom CSS (upgraded for world-class aesthetics)
+# ------------------------------------------------------------
 custom_css = """
 <style>
-/* Typography */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Use the Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 /* Base styles */
 html, body, [data-testid="stAppViewContainer"] {
@@ -30,277 +28,548 @@ html, body, [data-testid="stAppViewContainer"] {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Overall page styling with subtle gradient */
+/* Overall page background with enhanced subtle gradient */
 .main {
     background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%);
 }
 
-/* Header and text styling */
+/* Headings with improved typography */
 h1 {
     font-weight: 800;
-    font-size: 2.5rem;
+    font-size: 2.75rem;
     letter-spacing: -0.025em;
     color: #1a202c;
-    line-height: 1.2;
-    margin-bottom: 1rem;
+    line-height: 1.1;
+    margin-bottom: 1.25rem;
 }
 
 h2 {
     font-weight: 700;
-    font-size: 1.8rem;
+    font-size: 2rem;
     letter-spacing: -0.025em;
     color: #2d3748;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
+    margin-top: 1.75rem;
+    margin-bottom: 1rem;
 }
 
 h3 {
     font-weight: 600;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     color: #4a5568;
-    margin-top: 1.25rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+h4 {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #4a5568;
+    margin-top: 1.5rem;
     margin-bottom: 0.5rem;
 }
 
 p {
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 1.05rem;
+    line-height: 1.7;
     color: #4a5568;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
 }
 
-/* Layout Containers */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-/* Sidebar styling */
+/* Sidebar styling with enhanced depth */
 [data-testid="stSidebar"] {
     background-color: #fff;
     border-right: 1px solid #e2e8f0;
+    box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.03);
 }
-
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-    padding-top: 2rem;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-top: 2.25rem;
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
 }
-
 [data-testid="stSidebar"] h1 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     color: #5a67d8;
-    margin-bottom: 2rem;
+    margin-bottom: 2.25rem;
 }
 
-/* Custom form inputs */
-[data-testid="stTextInput"] input, 
-[data-testid="stNumberInput"] input, 
+/* Custom form inputs with refined styling */
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
 [data-testid="stTextArea"] textarea,
 [data-testid="stSelectbox"] {
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid #e2e8f0;
-    padding: 0.75rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    padding: 0.85rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.05rem;
+    transition: all 0.2s ease-in-out;
 }
-
-[data-testid="stTextInput"] input:focus, 
-[data-testid="stNumberInput"] input:focus, 
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus,
 [data-testid="stTextArea"] textarea:focus {
     border-color: #5a67d8;
     box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.15);
+    transform: translateY(-1px);
 }
 
-/* Buttons */
+/* More sophisticated button styling */
 [data-testid="baseButton-secondary"], 
 .stButton button {
-    background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.025em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 6px rgba(90, 103, 216, 0.2), 0 1px 3px rgba(90, 103, 216, 0.1);
+    background: linear-gradient(135deg, #6D28D9 0%, #4C1D95 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0.85rem 1.75rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.025em !important;
+    text-transform: uppercase !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 10px rgba(76, 29, 149, 0.3), 0 1px 3px rgba(76, 29, 149, 0.2) !important;
 }
-
 [data-testid="baseButton-secondary"]:hover, 
 .stButton button:hover {
-    background: linear-gradient(135deg, #4c51bf 0%, #434190 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 7px 14px rgba(90, 103, 216, 0.25), 0 3px 6px rgba(90, 103, 216, 0.15);
+    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 7px 14px rgba(124, 58, 237, 0.35), 0 3px 6px rgba(124, 58, 237, 0.2) !important;
 }
-
 [data-testid="baseButton-secondary"]:active, 
 .stButton button:active {
-    transform: translateY(0);
-    box-shadow: 0 3px 6px rgba(90, 103, 216, 0.15), 0 1px 3px rgba(90, 103, 216, 0.1);
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 6px rgba(124, 58, 237, 0.2), 0 1px 3px rgba(124, 58, 237, 0.1) !important;
 }
 
-/* Card styling */
+/* Enhanced card styling with better transitions */
 .card {
     background-color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.025);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06), 0 10px 20px rgba(0, 0, 0, 0.035);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: 1px solid #f0f4f8;
 }
-
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.07), 0 20px 30px rgba(0, 0, 0, 0.035);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 20px 40px rgba(0, 0, 0, 0.04);
 }
 
-/* Decision result box */
-.decision-box {
-    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-    border-radius: 12px;
-    padding: 2rem 1.5rem;
-    margin-top: 2rem;
-    border: 1px solid #f0f4f8;
-    box-shadow: 0 10px 25px rgba(90, 103, 216, 0.12), 0 4px 10px rgba(90, 103, 216, 0.08);
-    text-align: center;
-    animation: fadeInUp 0.5s ease-out forwards;
-    transform: translateY(20px);
-    opacity: 0;
-}
-
-.decision-box h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #5a67d8;
-    margin-bottom: 1.5rem;
-}
-
-.decision-box strong {
-    color: #1a202c;
-    font-weight: 700;
-}
-
-.decision-box .score {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #5a67d8;
-    margin: 1rem 0;
-    text-shadow: 0 2px 4px rgba(90, 103, 216, 0.2);
-}
-
-/* Factor cards */
-.factor-card {
-    display: flex;
-    align-items: center;
-    background-color: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
-    border-left: 4px solid #5a67d8;
-}
-
-.factor-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-    transform: translateX(3px);
-}
-
-.factor-card .factor-letter {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #5a67d8;
-    margin-right: 1rem;
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #ebf4ff;
-    border-radius: 50%;
-}
-
-.factor-card .factor-description {
-    flex: 1;
-}
-
-.factor-card .factor-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-left: auto;
-}
-
-.factor-card .factor-value.positive {
-    color: #48bb78;
-}
-
-.factor-card .factor-value.negative {
-    color: #f56565;
-}
-
-.factor-card .factor-value.neutral {
-    color: #a0aec0;
-}
-
-/* Landing page title styling */
+/* Landing page title styling with enhanced gradient */
 .landing-title {
-    font-size: 3.5rem;
+    font-size: 3.75rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     letter-spacing: -0.05em;
     line-height: 1;
     text-align: center;
 }
-
 .landing-subtitle {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 500;
     color: #4a5568;
-    margin-bottom: 2rem;
+    margin-bottom: 2.25rem;
     text-align: center;
 }
 
-/* Logo styling */
+/* Logo styling with refined depth */
 .logo {
     display: flex;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.25rem;
 }
-
 .logo-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 0.75rem;
+    margin-right: 0.85rem;
     color: white;
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 1.35rem;
+    box-shadow: 0 4px 8px rgba(76, 29, 149, 0.25);
 }
-
 .logo-text {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: #5a67d8;
 }
 
-/* Animation keyframes */
+/* Section headers with improved visuals */
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.75rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+.section-icon {
+    width: 36px;
+    height: 36px;
+    background: #EBF4FF;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.85rem;
+    color: #5a67d8;
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+/* Decision box with enhanced visual appeal */
+.decision-box {
+    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+    border-radius: 16px;
+    padding: 2.25rem 1.75rem;
+    margin-top: 2.25rem;
+    margin-bottom: 2.25rem;
+    border: 1px solid #f0f4f8;
+    box-shadow: 0 15px 35px rgba(76, 29, 149, 0.15), 0 5px 15px rgba(76, 29, 149, 0.08);
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out forwards;
+    transform: translateY(20px);
+    opacity: 0;
+}
+.decision-box h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.75rem;
+}
+.decision-box .score {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: #6D28D9;
+    margin: 1.25rem 0;
+    text-shadow: 0 2px 5px rgba(109, 40, 217, 0.25);
+}
+.recommendation {
+    margin-top: 1.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+.recommendation.positive {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.recommendation.negative {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.recommendation.neutral {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Factor cards with improved visuals */
+.factor-card {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s ease;
+    border-left: 4px solid #6D28D9;
+}
+.factor-card:hover {
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.08);
+    transform: translateX(3px);
+}
+.factor-card .factor-letter {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #6D28D9;
+    margin-right: 1.15rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #EBF4FF;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(76, 29, 149, 0.15);
+}
+.factor-card .factor-description {
+    flex: 1;
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+.factor-card .factor-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-left: auto;
+    padding-left: 1rem;
+}
+.factor-card .factor-value.positive {
+    color: #10B981;
+}
+.factor-card .factor-value.negative {
+    color: #EF4444;
+}
+.factor-card .factor-value.neutral {
+    color: #A0AEC0;
+}
+
+/* Item card styles with enhanced depth */
+.item-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    transition: all 0.25s ease;
+}
+.item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+.item-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #EBF4FF 0%, #C7D2FE 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.25rem;
+    color: #6D28D9;
+    font-weight: 700;
+    font-size: 1.5rem;
+    box-shadow: 0 2px 5px rgba(76, 29, 149, 0.1);
+}
+.item-details {
+    flex: 1;
+}
+.item-name {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #2d3748;
+}
+.item-cost {
+    font-weight: 800;
+    font-size: 1.35rem;
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Inferred data box with refined styling */
+.inferred-data {
+    background-color: #F9FAFB;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px dashed #CBD5E0;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.03);
+}
+.inferred-data h4 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #4a5568;
+    margin-bottom: 0.85rem;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 0.5rem;
+}
+.inferred-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.65rem;
+}
+.inferred-label {
+    font-weight: 600;
+    min-width: 200px;
+    color: #4a5568;
+    font-size: 1.05rem;
+}
+.inferred-value {
+    color: #2d3748;
+    font-weight: 500;
+    font-size: 1.05rem;
+}
+
+/* Input Form Container with enhanced depth */
+.input-form-container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 2.25rem 2rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.07), 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2.25rem;
+    border: 1px solid #f0f4f8;
+    position: relative;
+    overflow: hidden;
+}
+
+.input-form-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #6D28D9, #4338CA);
+}
+
+.main-input-field input {
+    font-size: 1.15rem;
+    padding: 1.15rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+}
+
+.main-input-field input:focus {
+    border-color: #6D28D9;
+    box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.15);
+    transform: translateY(-2px);
+}
+
+.submit-button .stButton button {
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%) !important;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.95rem 1.75rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    box-shadow: 0 5px 15px rgba(109, 40, 217, 0.35);
+    transition: all 0.3s ease;
+}
+
+.submit-button .stButton button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(109, 40, 217, 0.4);
+}
+
+.cost-field input {
+    font-size: 1.15rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.form-header {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.form-header-icon {
+    margin-right: 0.85rem;
+    font-size: 1.6rem;
+}
+
+/* App Header with enhanced typography */
+.app-header {
+    text-align: center;
+    padding-bottom: 1.75rem;
+    margin-bottom: 2.25rem;
+}
+
+.app-title {
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.65rem;
+    letter-spacing: -0.03em;
+}
+
+.app-subtitle {
+    font-size: 1.35rem;
+    color: #4a5568;
+    font-weight: 500;
+    max-width: 650px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* How it works page with enhanced visuals */
+.how-it-works-container {
+    background: #F9FAFB;
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-top: 2.25rem;
+    margin-bottom: 2.25rem;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 5px 15px rgba(0, 0, 0, 0.03);
+}
+.how-it-works-container h2 {
+    background: linear-gradient(135deg, #6D28D9 0%, #4338CA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+}
+.how-it-works-container p {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+    color: #2d3748;
+}
+.how-it-works-container ul {
+    list-style-type: none;
+    margin-left: 0.5rem;
+    margin-bottom: 1.5rem;
+    color: #2d3748;
+}
+.how-it-works-container ul li {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.15rem;
+    line-height: 1.6;
+}
+.how-it-works-container ul li:before {
+    content: "•";
+    color: #6D28D9;
+    font-weight: bold;
+    font-size: 1.5rem;
+    position: absolute;
+    left: 0.5rem;
+    top: -0.25rem;
+}
+
+/* Analysis in progress animation */
+.analysis-in-progress {
+    padding: 1rem;
+    border-radius: 12px;
+    background: #F9FAFB;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    animation: pulse 2s infinite;
+}
+
+/* Enhanced animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
     }
     to {
         opacity: 1;
@@ -310,189 +579,83 @@ p {
 
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(90, 103, 216, 0.4);
+        box-shadow: 0 0 0 0 rgba(109, 40, 217, 0.2);
     }
     70% {
-        box-shadow: 0 0 0 10px rgba(90, 103, 216, 0);
+        box-shadow: 0 0 0 10px rgba(109, 40, 217, 0);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(90, 103, 216, 0);
+        box-shadow: 0 0 0 0 rgba(109, 40, 217, 0);
     }
 }
 
-/* Decision recommendation styling */
-.recommendation {
+/* Quick Results Box */
+.quick-results-box {
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    border-radius: 14px;
+    padding: 1.5rem;
     margin-top: 1rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.recommendation.positive {
-    color: #48bb78;
-}
-
-.recommendation.negative {
-    color: #f56565;
-}
-
-.recommendation.neutral {
-    color: #ed8936;
-}
-
-/* Section headers */
-.section-header {
-    display: flex;
-    align-items: center;
     margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.section-header h2 {
-    margin: 0;
-}
-
-.section-icon {
-    width: 32px;
-    height: 32px;
-    background: #ebf4ff;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 0.75rem;
-    color: #5a67d8;
-    font-weight: 700;
-    font-size: 1rem;
-}
-
-/* Item card styles */
-.item-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    animation: fadeInUp 0.5s ease-out forwards;
 }
 
-.item-icon {
-    width: 40px;
-    height: 40px;
-    background: #ebf4ff;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-    color: #5a67d8;
-    font-weight: 700;
-    font-size: 1.25rem;
-}
-
-.item-details {
-    flex: 1;
-}
-
-.item-name {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: #2d3748;
-}
-
-.item-cost {
+.quick-results-label {
     font-weight: 700;
     font-size: 1.2rem;
-    color: #5a67d8;
-}
-
-/* Inferred data styles */
-.inferred-data {
-    background-color: #f8fafc;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 1rem;
-    border: 1px dashed #cbd5e0;
-}
-
-.inferred-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.inferred-label {
-    font-weight: 600;
-    min-width: 180px;
-    color: #4a5568;
-}
-
-.inferred-value {
     color: #2d3748;
 }
 
-/* Success & Error messages */
-.success-message, .error-message {
-    padding: 1rem;
+.quick-results-value {
+    font-weight: 800;
+    font-size: 1.4rem;
+    padding: 0.5rem 1.25rem;
     border-radius: 8px;
+}
+
+.quick-results-value.positive {
+    background: #10B981;
+    color: white;
+}
+
+.quick-results-value.negative {
+    background: #EF4444;
+    color: white;
+}
+
+.quick-results-value.neutral {
+    background: #F59E0B;
+    color: white;
+}
+
+/* Chart containers */
+.chart-container {
+    background: white;
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f0f4f8;
+}
+
+.chart-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2d3748;
     margin-bottom: 1rem;
-    animation: fadeInUp 0.3s ease-out forwards;
-}
-
-.success-message {
-    background-color: #f0fff4;
-    border: 1px solid #c6f6d5;
-    color: #2f855a;
-}
-
-.error-message {
-    background-color: #fff5f5;
-    border: 1px solid #fed7d7;
-    color: #c53030;
-}
-
-/* Thinking animation */
-.thinking {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 1rem 0;
-}
-
-.thinking-dot {
-    background-color: #5a67d8;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin: 0 5px;
-    animation: thinkingAnimation 1.4s infinite ease-in-out both;
-}
-
-.thinking-dot:nth-child(1) {
-    animation-delay: -0.32s;
-}
-
-.thinking-dot:nth-child(2) {
-    animation-delay: -0.16s;
-}
-
-@keyframes thinkingAnimation {
-    0%, 80%, 100% {
-        transform: scale(0);
-    }
-    40% {
-        transform: scale(1);
-    }
+    text-align: center;
 }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# --------------------------------------------------------------------
-# Helper functions for visual elements
-# --------------------------------------------------------------------
+# ------------------------------------------------------------
+# Helper Functions
+# ------------------------------------------------------------
 def render_logo():
     st.markdown("""
     <div class="logo">
@@ -509,179 +672,105 @@ def render_section_header(title, icon):
     </div>
     """, unsafe_allow_html=True)
 
-def render_factor_card(factor, value, description):
-    # Determine class based on value
-    if value > 0:
-        value_class = "positive"
-    elif value < 0:
-        value_class = "negative"
-    else:
-        value_class = "neutral"
-        
-    st.markdown(f"""
-    <div class="factor-card">
-        <div class="factor-letter">{factor}</div>
-        <div class="factor-description">{description}</div>
-        <div class="factor-value {value_class}">{value:+d}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def render_item_card(item_name, item_cost):
-    icon = "💼" if item_cost >= 1000 else "🛍️"
-    st.markdown(f"""
-    <div class="item-card">
-        <div class="item-icon">{icon}</div>
-        <div class="item-details">
-            <div class="item-name">{item_name}</div>
-        </div>
-        <div class="item-cost">${item_cost:,.2f}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def render_inferred_data(inferred_data):
-    st.markdown("""
-    <div class="inferred-data">
-        <h4>AI-Inferred Data</h4>
-    """, unsafe_allow_html=True)
-    
-    for key, value in inferred_data.items():
-        st.markdown(f"""
-        <div class="inferred-item">
-            <div class="inferred-label">{key}:</div>
-            <div class="inferred-value">{value}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-
+# ------------------------------------------------------------
+# Radar / Gauge Charts
+# ------------------------------------------------------------
 def create_radar_chart(factors):
-    categories = [
-        'Discretionary Income', 
-        'Opportunity Cost', 
-        'Goal Alignment', 
-        'Long-Term Impact', 
-        'Behavioral'
-    ]
-    
-    values = [
-        factors['D'], 
-        factors['O'], 
-        factors['G'], 
-        factors['L'], 
-        factors['B']
-    ]
-    # Add the first value at the end to close the shape
-    values.append(values[0])
+    import plotly.graph_objects as go
+    categories = ['Discretionary Income','Opportunity Cost','Goal Alignment','Long-Term Impact','Behavioral']
+    vals = [factors['D'], factors['O'], factors['G'], factors['L'], factors['B']]
+    # Close the shape
+    vals.append(vals[0])
     categories.append(categories[0])
-    
+
     fig = go.Figure()
-    
-    # Add radar chart trace
     fig.add_trace(go.Scatterpolar(
-        r=values,
+        r=vals,
         theta=categories,
         fill='toself',
-        fillcolor='rgba(90, 103, 216, 0.2)',
-        line=dict(color='#5a67d8', width=2),
+        fillcolor='rgba(109, 40, 217, 0.2)',
+        line=dict(color='#6D28D9', width=2),
         name='Factors'
     ))
-    
-    # Add horizontal lines for reference
+    # Reference lines
     for i in [-2, -1, 0, 1, 2]:
         fig.add_trace(go.Scatterpolar(
-            r=[i] * len(categories),
+            r=[i]*len(categories),
             theta=categories,
-            line=dict(color='rgba(200, 200, 200, 0.5)', width=1, dash='dash'),
-            name=f'Level {i}',
+            line=dict(color='rgba(200,200,200,0.5)', width=1, dash='dash'),
             showlegend=False
         ))
-    
-    # Update layout
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
-                visible=True,
-                range=[-3, 3],
+                visible=True, range=[-3, 3],
                 tickvals=[-2, -1, 0, 1, 2],
-                showticklabels=True,
-                ticks='',
-                linewidth=0,
-                gridwidth=0.5,
                 gridcolor='rgba(200, 200, 200, 0.3)'
             ),
-            angularaxis=dict(
-                tickwidth=1,
-                linewidth=1,
-                gridwidth=1,
-                gridcolor='rgba(200, 200, 200, 0.3)'
-            ),
-            bgcolor='rgba(255, 255, 255, 0.9)'
+            angularaxis=dict(gridcolor='rgba(200, 200, 200, 0.3)'),
+            bgcolor='rgba(255,255,255,0.9)'
         ),
         showlegend=False,
-        margin=dict(l=70, r=70, t=20, b=20),
-        height=350,
+        margin=dict(l=60, r=60, t=20, b=20),
+        height=400,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)'
     )
-    
     return fig
 
 def create_pds_gauge(pds):
-    # Define gauge colors based on value
+    import plotly.graph_objects as go
+    # Color logic
     if pds >= 5:
-        color = "#48bb78"  # Green for positive
+        color = "#10B981"  # green
     elif pds < 0:
-        color = "#f56565"  # Red for negative
+        color = "#EF4444"  # red
     else:
-        color = "#ed8936"  # Orange for neutral
-    
+        color = "#F59E0B"  # orange
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=pds,
-        domain={'x': [0, 1], 'y': [0, 1]},
+        domain={'x': [0,1], 'y': [0,1]},
         gauge={
-            'axis': {'range': [-10, 10], 'tickwidth': 1, 'tickcolor': "#2d3748"},
+            'axis': {'range': [-10,10], 'tickwidth': 1, 'tickcolor': "#2D3748"},
             'bar': {'color': color},
             'bgcolor': "white",
             'borderwidth': 2,
-            'bordercolor': "#e2e8f0",
+            'bordercolor': "#E2E8F0",
             'steps': [
-                {'range': [-10, 0], 'color': '#fed7d7'},
-                {'range': [0, 5], 'color': '#feebc8'},
-                {'range': [5, 10], 'color': '#c6f6d5'}
+                {'range': [-10,0], 'color': '#FEE2E2'},
+                {'range': [0,5], 'color': '#FEF3C7'},
+                {'range': [5,10], 'color': '#D1FAE5'}
             ],
             'threshold': {
-                'line': {'color': "red", 'width': 4},
-                'thickness': 0.75,
-                'value': 0
+                'line': {'color': "#6D28D9", 'width': 2},
+                'thickness': 0.8,
+                'value': 5
             }
-        }
+        },
+        title={'text': "Purchase Decision Score", 'font': {'size': 18, 'color': "#2D3748", 'family': "Inter, sans-serif"}},
+        number={'font': {'size': 40, 'color': color, 'family': "Inter, sans-serif"}, 'suffix': "", 'prefix': ('+' if pds > 0 else '')}
     ))
-    
     fig.update_layout(
         height=250,
         margin=dict(l=20, r=20, t=50, b=20),
         paper_bgcolor='rgba(0,0,0,0)',
-        font={'color': "#2d3748", 'family': "Inter, sans-serif"}
+        font={'color': "#2D3748", 'family': "Inter, sans-serif"}
     )
-    
     return fig
 
-# --------------------------------------------------------------------
-# New function: Infer additional details from item name and cost
-# --------------------------------------------------------------------
+# ------------------------------------------------------------
+# AI Utility Functions
+# ------------------------------------------------------------
 def infer_purchase_details(item_name, item_cost):
-    """
-    Use Gemini to infer additional purchase details based on the item name and cost.
-    Returns a dictionary with inferred values for all required fields.
-    """
-    prompt_text = f"""
+    import google.generativeai as genai
+    prompt = f"""
 You are a financial advisor AI that needs to infer details about a purchase decision.
 Based only on the item name and cost, infer reasonable values for:
-1. Monthly leftover income (typical disposable income after expenses for someone who might buy this)
+1. Monthly leftover income
 2. Whether the buyer likely has high-interest debt (Yes/No)
-3. What the buyer's main financial goal might be
-4. How urgent this purchase is (Urgent Needs/Mostly Wants/Mixed)
+3. The buyer's main financial goal
+4. Purchase urgency (Urgent Needs/Mostly Wants/Mixed)
 
 Item: "{item_name}"
 Cost: ${item_cost:.2f}
@@ -693,147 +782,114 @@ Provide your response in valid JSON format only:
   "main_financial_goal": "Save for retirement",
   "purchase_urgency": "Mostly Wants"
 }}
-    """.strip()
-
+"""
     try:
-        # Create the model and generate content
         model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(
-            prompt_text,
+        resp = model.generate_content(
+            prompt, 
             generation_config=genai.types.GenerationConfig(
                 temperature=0.2,
                 max_output_tokens=512
             )
         )
-
-        if not response:
-            st.error("No response returned from the Gemini model.")
-            return get_default_inferences(item_cost)
-
-        output_text = response.text
-        # Attempt to extract JSON from the output
-        candidates = re.findall(r"(\{[\s\S]*?\})", output_text)
-        for candidate in candidates:
+        if not resp:
+            st.error("No response from Gemini.")
+            return default_inferences(item_cost)
+        text = resp.text
+        # Attempt to parse JSON
+        candidates = re.findall(r"(\{[\s\S]*?\})", text)
+        for c in candidates:
             try:
-                data = json.loads(candidate)
-                required_keys = ["leftover_income", "has_high_interest_debt", 
-                                "main_financial_goal", "purchase_urgency"]
-                if all(k in data for k in required_keys):
+                data = json.loads(c)
+                needed = ["leftover_income", "has_high_interest_debt","main_financial_goal","purchase_urgency"]
+                if all(k in data for k in needed):
                     return data
-            except json.JSONDecodeError:
-                continue
-
-        st.error("Unable to parse valid JSON from model output.")
-        return get_default_inferences(item_cost)
-
+            except:
+                pass
+        st.error("Unable to parse valid JSON for purchase details.")
+        return default_inferences(item_cost)
     except Exception as e:
-        st.error(f"Error calling Gemini model: {e}")
-        return get_default_inferences(item_cost)
+        st.error(f"Error calling Gemini: {e}")
+        return default_inferences(item_cost)
 
-def get_default_inferences(item_cost):
-    """Provide default values when inference fails"""
-    # Scale leftover income based on item cost
-    leftover_income = max(1000, item_cost * 2)
-    
+def default_inferences(cost):
+    leftover = max(1000, cost*2)
     return {
-        "leftover_income": leftover_income,
+        "leftover_income": leftover,
         "has_high_interest_debt": "No",
         "main_financial_goal": "Save for emergencies",
         "purchase_urgency": "Mixed"
     }
 
-# --------------------------------------------------------------------
-# get_factors_from_gemini: Using the updated google-generativeai library
-# --------------------------------------------------------------------
-def get_factors_from_gemini(
-    leftover_income: float,
-    has_high_interest_debt: str,
-    main_financial_goal: str,
-    purchase_urgency: str,
-    item_name: str,
-    item_cost: float
-) -> dict:
-    """
-    Calls the Gemini 2.0 Flash model with a prompt that explains how to assign each factor.
-    Returns factor values (D, O, G, L, B) as integers in the range -2 to +2.
-    """
-    prompt_text = f"""
+def get_factors_from_gemini(leftover_income, has_high_interest_debt,
+                            main_financial_goal, purchase_urgency,
+                            item_name, item_cost):
+    import google.generativeai as genai
+    prompt = f"""
 We have a Purchase Decision Score (PDS) formula:
-PDS = D + O + G + L + B,
-where each factor is an integer from -2 to +2.
+PDS = D + O + G + L + B (each factor between -2 and 2).
 
 Guidelines:
-1. D (Discretionary Income Factor): Rate higher if leftover_income is much larger than item_cost.
-2. O (Opportunity Cost Factor): Rate positive if no high-interest debt and cost is negligible compared to goals; negative if high-interest debt exists.
-3. G (Goal Alignment Factor): Rate positive if the purchase strongly supports the main financial goal; negative if it conflicts.
-4. L (Long-Term Impact Factor): Rate positive if the purchase has lasting benefits; negative if it creates ongoing costs.
-5. B (Behavioral/Psychological Factor): Rate positive if the purchase is urgently needed and reduces stress; negative if it is impulsive.
+1. D: Higher if leftover_income >> item_cost
+2. O: Positive if no high-interest debt, negative if debt
+3. G: Positive if aligns with main goal, negative if conflicts
+4. L: Positive if long-term benefit, negative if extra cost
+5. B: Positive if truly urgent, negative if impulsive want
 
-Evaluate the following scenario:
-- Item: "{item_name}"
-- Cost: {item_cost} USD
-- Monthly Leftover Income: {leftover_income} USD
-- High-interest debt: {has_high_interest_debt}
-- Main Financial Goal: {main_financial_goal}
-- Purchase Urgency: {purchase_urgency}
+Evaluate:
+- Item: {item_name}
+- Cost: {item_cost}
+- leftover_income: {leftover_income}
+- high_interest_debt: {has_high_interest_debt}
+- main_financial_goal: {main_financial_goal}
+- purchase_urgency: {purchase_urgency}
 
-Also provide a brief, one-sentence explanation for each factor.
-
-Assign integer values from -2 to +2 for each factor (D, O, G, L, B) according to the guidelines.
-Return the result in valid JSON format, for example:
+Return valid JSON:
 {{
-  "D": 2,
-  "O": 2,
-  "G": 2,
-  "L": 2,
-  "B": 2,
-  "D_explanation": "The item cost is less than 10% of monthly leftover income.",
-  "O_explanation": "No high-interest debt and the cost is small relative to financial goals.",
-  "G_explanation": "This purchase directly supports the main financial goal.",
-  "L_explanation": "The item provides long-term benefits with minimal ongoing costs.",
-  "B_explanation": "This purchase addresses an urgent need and reduces stress."
+  "D": -2 to 2,
+  "O": -2 to 2,
+  "G": -2 to 2,
+  "L": -2 to 2,
+  "B": -2 to 2,
+  "D_explanation": "...",
+  "O_explanation": "...",
+  "G_explanation": "...",
+  "L_explanation": "...",
+  "B_explanation": "..."
 }}
-    """.strip()
-
+"""
     try:
-        # Create the model and generate content
         model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(
-            prompt_text,
+        resp = model.generate_content(
+            prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.2,
                 max_output_tokens=512
             )
         )
-
-        if not response:
-            st.error("No response returned from the Gemini model.")
-            return {"D": 0, "O": 0, "G": 0, "L": 0, "B": 0}
-
-        output_text = response.text
-        # Attempt to extract JSON from the output
-        candidates = re.findall(r"(\{[\s\S]*?\})", output_text)
-        for candidate in candidates:
+        if not resp:
+            st.error("No response from Gemini.")
+            return {"D":0,"O":0,"G":0,"L":0,"B":0}
+        text = resp.text
+        # Attempt parse
+        candidates = re.findall(r"(\{[\s\S]*?\})", text)
+        for c in candidates:
             try:
-                data = json.loads(candidate)
-                if all(k in data for k in ["D", "O", "G", "L", "B"]):
+                data = json.loads(c)
+                if all(f in data for f in ["D","O","G","L","B"]):
                     return data
-            except json.JSONDecodeError:
-                continue
-
-        st.error("Unable to parse valid JSON from model output.")
-        return {"D": 0, "O": 0, "G": 0, "L": 0, "B": 0}
-
+            except:
+                pass
+        st.error("Unable to parse valid JSON for factors.")
+        return {"D":0,"O":0,"G":0,"L":0,"B":0}
     except Exception as e:
-        st.error(f"Error calling Gemini model: {e}")
-        return {"D": 0, "O": 0, "G": 0, "L": 0, "B": 0}
+        st.error(f"Error calling Gemini: {e}")
+        return {"D":0,"O":0,"G":0,"L":0,"B":0}
 
-def compute_pds(factors: dict) -> int:
-    """Compute the Purchase Decision Score as a sum of factors."""
-    return sum(factors.get(k, 0) for k in ["D", "O", "G", "L", "B"])
+def compute_pds(factors):
+    return sum(factors.get(f,0) for f in ["D","O","G","L","B"])
 
-def get_recommendation(pds: int) -> tuple:
-    """Return a recommendation based on the PDS."""
+def get_recommendation(pds):
     if pds >= 5:
         return "Buy it.", "positive"
     elif pds < 0:
@@ -841,250 +897,161 @@ def get_recommendation(pds: int) -> tuple:
     else:
         return "Consider carefully.", "neutral"
 
-# --------------------------------------------------------------------
-# Main application
-# --------------------------------------------------------------------
+# ------------------------------------------------------------
+# Rendering Helpers
+# ------------------------------------------------------------
+def render_item_card(item_name, cost):
+    icon = "💼" if cost >= 1000 else "🛍️"
+    st.markdown(f"""
+    <div class="item-card">
+        <div class="item-icon">{icon}</div>
+        <div class="item-details">
+            <div class="item-name">{item_name}</div>
+        </div>
+        <div class="item-cost">${cost:,.2f}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_inferred_data(data_dict):
+    st.markdown("<div class='inferred-data'><h4>AI-Inferred Data</h4>", unsafe_allow_html=True)
+    for k,v in data_dict.items():
+        st.markdown(f"""
+        <div class="inferred-item">
+            <div class="inferred-label">{k}:</div>
+            <div class="inferred-value">{v}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+def render_factor_card(factor, value, desc):
+    # color class
+    if value > 0:
+        val_class = "positive"
+    elif value < 0:
+        val_class = "negative"
+    else:
+        val_class = "neutral"
+    st.markdown(f"""
+    <div class="factor-card">
+        <div class="factor-letter">{factor}</div>
+        <div class="factor-description">{desc}</div>
+        <div class="factor-value {val_class}">{value:+d}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ------------------------------------------------------------
+# Main Application
+# ------------------------------------------------------------
 def main():
     # Sidebar
     with st.sidebar:
         render_logo()
         st.markdown("##### Decision Assistant")
-        
-        pages = ["Decision Tool", "How It Works", "Examples"]
-        selection = st.radio("", pages, label_visibility="collapsed")
+        pages = ["Decision Tool", "How It Works"]
+        choice = st.radio("", pages, label_visibility="collapsed")
         
         st.markdown("---")
         st.markdown("### Quick Tips")
         st.markdown("""
-        - Just enter the item and cost
-        - Our AI will analyze the rest
-        - Higher score = better purchase
-        - Scores above 5 are recommended
+        - Enter the item name and cost.
+        - Our AI infers key financial details.
+        - A higher score suggests a sound purchase.
+        - Score above 5 means it's a buy.
         """)
         
         st.markdown("---")
         st.markdown("© 2025 Munger AI")
     
-    # Landing Page Header
+    # Main title (visible on all pages)
     st.markdown("""
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h1 class="landing-title">Munger AI</h1>
-        <p class="landing-subtitle">Should you buy it? Our AI decides in seconds.</p>
+    <div class="app-header">
+        <div class="app-title">Munger AI</div>
+        <div class="app-subtitle">Should you buy it? Our AI decides in seconds.</div>
     </div>
     """, unsafe_allow_html=True)
     
-    if selection == "Decision Tool":
-        # Simplified purchase decision form
-        render_section_header("What are you buying?", "🛍️")
+    # ---------------------------------------------------------
+    # Decision Tool
+    # ---------------------------------------------------------
+    if choice == "Decision Tool":
+        st.header("Decision Tool")
+        with st.form("decision_form", clear_on_submit=True):
+            item_name = st.text_input("Enter the item name:")
+            item_cost = st.number_input("Enter the cost of the item:", min_value=0.0, format="%.2f")
+            submit = st.form_submit_button("Should I Buy It?")
         
-        with st.form("simplified_purchase_form"):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                item_name = st.text_input("What are you buying?", value="New Laptop")
-            with col2:
-                item_cost = st.number_input("Cost ($)", min_value=1.0, value=500.0, step=50.0)
-            
-            submit_button = st.form_submit_button("Should I Buy It?", use_container_width=True)
-        
-        if submit_button:
-            with st.spinner("AI is analyzing your purchase..."):
-                # First, infer additional details based on item name and cost
-                inferred_details = infer_purchase_details(item_name, item_cost)
-                
-                # Display the item card
-                render_item_card(item_name, item_cost)
-                
-                # Show inferred data in a nice format
-                render_inferred_data({
-                    "Monthly leftover income": f"${inferred_details['leftover_income']:,.2f}",
-                    "High-interest debt": inferred_details['has_high_interest_debt'],
-                    "Main financial goal": inferred_details['main_financial_goal'],
-                    "Purchase urgency": inferred_details['purchase_urgency']
-                })
-                
-                # Get decision factors using inferred details
-                factors = get_factors_from_gemini(
-                    leftover_income=inferred_details['leftover_income'],
-                    has_high_interest_debt=inferred_details['has_high_interest_debt'],
-                    main_financial_goal=inferred_details['main_financial_goal'],
-                    purchase_urgency=inferred_details['purchase_urgency'],
-                    item_name=item_name,
-                    item_cost=item_cost
-                )
-                
-                # Calculate PDS and get recommendation
-                pds = compute_pds(factors)
-                recommendation, rec_class = get_recommendation(pds)
-                
-                # Display results
-                st.markdown(f"""
-                <div class="decision-box">
-                    <h2>Purchase Decision Score</h2>
-                    <div class="score">{pds}</div>
-                    <div class="recommendation {rec_class}">{recommendation}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Two columns for radar chart and gauge
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("### Decision Factors")
-                    factor_descriptions = {
-                        'D': 'Discretionary Income',
-                        'O': 'Opportunity Cost', 
-                        'G': 'Goal Alignment',
-                        'L': 'Long-Term Impact',
-                        'B': 'Behavioral'
-                    }
-                    for factor, description in factor_descriptions.items():
-                        render_factor_card(factor, factors[factor], description)
-                        if f"{factor}_explanation" in factors:
-                            st.caption(factors[f"{factor}_explanation"])
-                
-                with col2:
-                    st.markdown("### Factor Analysis")
-                    radar_fig = create_radar_chart(factors)
-                    st.plotly_chart(radar_fig, use_container_width=True)
+        if submit:
+            if item_name and item_cost > 0:
+                st.subheader("Analyzing your decision...")
+                with st.spinner("Letting the AI think..."):
+                    # Render the item card (item description)
+                    render_item_card(item_name, item_cost)
                     
-                    gauge_fig = create_pds_gauge(pds)
-                    st.plotly_chart(gauge_fig, use_container_width=True)
-                
-                # Display insights
-                st.markdown("### Decision Insights")
-                
-                
-                # Generate insights based on factors
-                insights = []
-                
-                # Get the direction of the recommendation
-                if pds >= 5:
-                    insights.append(f"✅ Based on our analysis, buying the {item_name} is a good financial decision.")
-                elif pds < 0:
-                    insights.append(f"⚠️ Our analysis suggests that buying the {item_name} may not be the best financial decision right now.")
-                else:
-                    insights.append(f"⚖️ This purchase could be reasonable, but carefully consider if the {item_name} is truly necessary.")
-                
-                # Add insights based on the strongest factors (positive or negative)
-                factor_keys = ["D", "O", "G", "L", "B"]
-                for factor in factor_keys:
-                    if factors[factor] >= 2:
-                        insights.append(f"✅ {factors.get(f'{factor}_explanation', 'Strong positive for this factor.')}")
-                    elif factors[factor] <= -2:
-                        insights.append(f"⚠️ {factors.get(f'{factor}_explanation', 'Strong negative for this factor.')}")
-                
-                # Add a recommendation
-                if pds >= 5:
-                    insights.append("✅ Go ahead with this purchase.")
-                elif pds < 0:
-                    if factors["D"] < 0:
-                        insights.append("⚠️ Consider saving more before making this purchase.")
-                    elif factors["O"] < 0:
-                        insights.append("⚠️ Focus on paying down high-interest debt first.")
-                    elif factors["L"] < 0:
-                        insights.append("⚠️ Look for alternatives with better long-term value.")
-                    else:
-                        insights.append("⚠️ Consider waiting or finding less expensive alternatives.")
-                else:
-                    insights.append("⚖️ If you decide to proceed, make sure this purchase doesn't impact other financial priorities.")
-                
-                for insight in insights:
-                    st.markdown(f"- {insight}")
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+                    # Compute AI inferences and evaluation factors
+                    inferences = infer_purchase_details(item_name, item_cost)
+                    factors = get_factors_from_gemini(
+                        inferences["leftover_income"],
+                        inferences["has_high_interest_debt"],
+                        inferences["main_financial_goal"],
+                        inferences["purchase_urgency"],
+                        item_name,
+                        item_cost
+                    )
+                    pds = compute_pds(factors)
+                    recommendation, rec_class = get_recommendation(pds)
+                    
+                    # Display final decision box immediately below the item description
+                    st.markdown(f"""
+                    <div class="decision-box">
+                        <h2>Final Recommendation</h2>
+                        <div class="score">PDS: {pds:+d}</div>
+                        <div class="recommendation {rec_class}">{recommendation}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Display additional details
+                    render_inferred_data(inferences)
+                    
+                    for factor in ["D", "O", "G", "L", "B"]:
+                        explanation = factors.get(f"{factor}_explanation", "No explanation provided.")
+                        render_factor_card(factor, int(factors.get(factor, 0)), explanation)
+                    
+                    st.plotly_chart(create_pds_gauge(pds), use_container_width=True)
+                    st.plotly_chart(create_radar_chart(factors), use_container_width=True)
+            else:
+                st.error("Please provide a valid item name and a cost greater than 0.")
     
-    elif selection == "How It Works":
-        st.markdown("## How Munger AI Works")
+    # ---------------------------------------------------------
+    # How It Works
+    # ---------------------------------------------------------
+    elif choice == "How It Works":
+        st.header("How It Works")
         st.markdown("""
-        <div class="card">
-            <h3>Simple, AI-Powered Purchase Decisions</h3>
-            <p>Munger AI uses advanced artificial intelligence to help you make better buying decisions, inspired by Charlie Munger's mental models.</p>
-            
-            <h4>1. Just Tell Us What You're Buying</h4>
-            <p>Enter only two things:</p>
+        <div class="how-it-works-container">
+            <h2>Our Process Explained</h2>
+            <p>
+                <strong>Munger AI</strong> simplifies your purchase decisions through a three-step process:
+            </p>
             <ul>
-                <li>What you want to buy</li>
-                <li>How much it costs</li>
+                <li>
+                    <strong>Input Your Data:</strong> Enter the name and cost of the item.
+                </li>
+                <li>
+                    <strong>AI Inference:</strong> Our advanced AI analyzes your input to infer key financial details,
+                    such as your leftover income, debt status, financial goals, and purchase urgency.
+                </li>
+                <li>
+                    <strong>Factor Evaluation & Scoring:</strong> The AI evaluates five critical factors
+                    (Discretionary Income, Opportunity Cost, Goal Alignment, Long-Term Impact, Behavioral)
+                    and computes a Purchase Decision Score (PDS). A higher score indicates a more financially sound decision.
+                </li>
             </ul>
-            
-            <h4>2. Our AI Fills in the Rest</h4>
-            <p>Based on what you're buying and its cost, our AI intuits:</p>
-            <ul>
-                <li>Your likely monthly discretionary income</li>
-                <li>Whether you might have high-interest debt</li>
-                <li>What financial goals you might have</li>
-                <li>How urgently you need this purchase</li>
-            </ul>
-            
-            <h4>3. Get Your Purchase Decision Score</h4>
-            <p>We calculate your Purchase Decision Score (PDS) using five key factors:</p>
-            <ul>
-                <li><strong>D</strong>: Discretionary Income Factor</li>
-                <li><strong>O</strong>: Opportunity Cost Factor</li>
-                <li><strong>G</strong>: Goal Alignment Factor</li>
-                <li><strong>L</strong>: Long-Term Impact Factor</li>
-                <li><strong>B</strong>: Behavioral/Psychological Factor</li>
-            </ul>
-            
-            <h4>4. Make a Smarter Decision</h4>
-            <p>A score of 5 or higher means "Buy it." A negative score means "Don't buy it." Anything in between requires careful consideration.</p>
+            <p>
+                Visual charts and detailed factor breakdowns help you understand the reasoning behind the final recommendation.
+                This ensures you make informed decisions that align with your financial goals.
+            </p>
         </div>
         """, unsafe_allow_html=True)
         
-    elif selection == "Examples":
-        st.markdown("## Example Purchases")
-        
-        examples = [
-            {
-                "title": "Essential Professional Upgrade",
-                "item": "High-Performance Laptop",
-                "cost": 1200,
-                "description": "A powerful laptop for a professional who needs it for work",
-                "likely_score": "High (5+)"
-            },
-            {
-                "title": "Luxury Purchase",
-                "item": "Designer Watch",
-                "cost": 5000,
-                "description": "An expensive luxury watch as a status symbol",
-                "likely_score": "Low (Negative)"
-            },
-            {
-                "title": "Home Investment",
-                "item": "Quality Mattress",
-                "cost": 800,
-                "description": "A high-quality mattress to improve sleep and health",
-                "likely_score": "High (5+)"
-            },
-            {
-                "title": "Impulse Purchase",
-                "item": "Latest Smartphone",
-                "cost": 1000,
-                "description": "Upgrading to the newest smartphone when current one works fine",
-                "likely_score": "Medium (0-4)"
-            }
-        ]
-        
-        for example in examples:
-            st.markdown(f"""
-            <div class="card">
-                <h3>{example["title"]}</h3>
-                <div class="item-card">
-                    <div class="item-icon">🛍️</div>
-                    <div class="item-details">
-                        <div class="item-name">{example["item"]}</div>
-                        <div>{example["description"]}</div>
-                    </div>
-                    <div class="item-cost">${example["cost"]:,.2f}</div>
-                </div>
-                <p><strong>Likely PDS:</strong> {example["likely_score"]}</p>
-                
-                <form action="">
-                    <button type="submit" class="stButton">Try This Example</button>
-                </form>
-            </div>
-            """, unsafe_allow_html=True)
-
-# Run the application
 if __name__ == "__main__":
     main()
